@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <title>Node OS Metrics Via Server Sent Events</title>
+    <script src="./node_modules/d3/d3.min.js"></script>
+
+    <style>
+        .legend {
+            font-size: 12px;
+        }
+        rect {
+            stroke-width: 2;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>CPU Usage</h2>
+    <div id="cpu"></div>
+
+    <script>
+        (function(d3) {
+            'use strict';
+
+            var url = 'http://localhost:8090/events';
+            var eventSrc = new EventSource(url);
+
+            eventSrc.onmessage = function(event) {
+                console.log('event message received ' + event.data);
+            };
+
+            eventSrc.onopen = function(event) {
+                console.log('event open received ' + event.data);
+            };
+
+            eventSrc.onerror = function(event) {
+                console.log('error message received ' + event.data);
+            };
+
+            eventSrc.addEventListener("os_metrics", function(event) {
+                console.log('metrics ' + event.data);
+            }, false);
+
+            //Below two listeners are feeding Pie Chart. 
+            eventSrc.addEventListener("os_metrics.cpuFree", function(event) {
+                console.log('cpu free ' + event.data);
+                dataset[0].count = event.data;
+                change(event.data);
+            }, false);
+
+            eventSrc.addEventListener("os_metrics.cpuUsage", function(event) {
+                console.log('cpu usage ' + event.data);
+                dataset[1].count = event.data;
+                change(event.data);
+            }, false);
+
+            //Start of even steven
+            var dataset = [{
+                label: 'Free',
+                count: 0.5
+            }, {
+                label: 'Used',
+                count: 0.5
+            }];
+
+            var width = 400;
+            var height = 400;
+            var radius = Math.min(width, height) / 2;
+            var donutWidth = 75;
+            var legendRectSize = 18; 
+            var legendSpacing = 4; 
+
+            var color = d3.scale.category20();
+
+            var svg = d3.select('#cpu')
+                .append('svg')
+                .attr('width', width)
+                .attr('height', height)
+                .append('g')
+                .attr('transform', 'translate(' + (width / 2) +
+                    ',' + (height / 2) + ')');
+
+            var arc = d3.svg.arc()
+                .innerRadius(radius - donutWidth)
+                .outerRadius(radius);
+
+            var pie = d3.layout.pie()
+                .value(function(d) {
+                    return d.count;
+                })
+                .sort(null);
+
+            var path = svg.selectAll('path')
+                .data(pie(dataset))
+                .enter()
+                .append('path')
+                .attr('d', arc)
+                .attr('fill', function(d, i) {
+                    return color(d.data.label);
+                })
+                .each(function(d) { this._current = d; });
+
+            function change(value) {
+                pie.value(function(d) {
+                    return d.count;
+                }); 
+                path = path.data(pie(dataset)); 
+                path.transition().duration(750).attrTween("d", arcTween); 
+            }
+
+            function arcTween(a) {
+                var i = d3.interpolate(this._current, a);
+                this._current = i(0);
+                return function(t) {
+                    return arc(i(t));
+                };
+            }
+
+            var legend = svg.selectAll('.legend') 
+                .data(color.domain()) 
+                .enter() 
+                .append('g') 
+                .attr('class', 'legend') 
+                .attr('transform', function(d, i) { 
+                    var height = legendRectSize + legendSpacing; 
+                    var offset = height * color.domain().length / 2; 
+                    var horz = -2 * legendRectSize; 
+                    var vert = i * height - offset; 
+                    return 'translate(' + horz + ',' + vert + ')'; 
+                }); 
+
+            legend.append('rect') 
+                .attr('width', legendRectSize) 
+                .attr('height', legendRectSize) 
+                .style('fill', color) 
+                .style('stroke', color);
+
+            legend.append('text') 
+                .attr('x', legendRectSize + legendSpacing) 
+                .attr('y', legendRectSize - legendSpacing) 
+                .text(function(d) {
+                    return d;
+                }); 
+
+        })(window.d3);
+    </script>
+
+</body>
+
+</html>
+

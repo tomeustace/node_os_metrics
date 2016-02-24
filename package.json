@@ -1,0 +1,20 @@
+{
+  "name": "node_os_metrics",
+  "version": "0.0.1",
+  "description": "A utility that streams os metrics via Server Sent Events to client.",
+  "main": "os_metrics.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Tom Eustace",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.15.0",
+    "cors": "^2.7.1",
+    "d3": "^3.5.16",
+    "diskspace": "^1.0.2",
+    "events": "^1.1.0",
+    "express": "^4.13.4",
+    "os-utils": "0.0.14"
+  }
+}
