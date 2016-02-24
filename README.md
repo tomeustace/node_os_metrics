@@ -17,4 +17,3 @@ node os_metrics.js
 
 open index.html in browser, CPU chart should update at 5 seconds intervals.  F12 to view other metrics.
 
-
